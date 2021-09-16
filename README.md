@@ -6,5 +6,10 @@
 
 ```
 go build
-.\battleship.exe 
+.\battleship.exe numPort
 ```
+
+* Exemple
+
+.\battleship.exe 5000
+

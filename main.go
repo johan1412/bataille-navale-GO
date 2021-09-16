@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 type square struct {
@@ -30,6 +31,11 @@ func (ship *ship) isSunk() bool {
 func main() {
 	fmt.Println("=================\n BATLESHIP START \n=================")
 
+	port := os.Args[1]
+	fmt.Println("Port = ", port)
+
+	listenPort := ":" + port
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/board", BoardHandler)
@@ -37,5 +43,5 @@ func main() {
 	mux.HandleFunc("/hit", HitHandler)
 
 	WrappedMux := RunSomeCode(mux)
-	log.Fatal(http.ListenAndServe(":4567", WrappedMux))
+	log.Fatal(http.ListenAndServe(listenPort, WrappedMux))
 }
