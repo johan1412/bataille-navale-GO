@@ -1,12 +1,16 @@
 package main
 
 import (
-	"math/rand"
-	"time"
+	"bufio"
 	"fmt"
-	"log"
+	"io/ioutil"
+	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type square struct {
@@ -30,10 +34,13 @@ func (ship *ship) isSunk() bool {
 	return true
 }
 
+var board [10][10]int
+var ships [3]ship
+var takenSquares [10][10]bool
+
 func main() {
 	size := 10
-	var takenSquares [10][10]bool
-	var ships [3]ship
+
 	i := 0
 	for i < len(ships) {
 
@@ -82,10 +89,12 @@ func main() {
 
 	}
 
-	port := os.Args[1]
-	fmt.Println("Port = ", port)
+	//fmt.Print(ships)
 
-	listenPort := ":" + port
+	/* port := os.Args[1]
+	=	fmt.Println("Port = ", port)
+
+		listenPort := ":" + port */
 
 	//mux := http.NewServeMux()
 
@@ -94,12 +103,67 @@ func main() {
 	http.HandleFunc("/hit", HitHandler)
 
 	//WrappedMux := RunSomeCode(mux)
-	log.Fatal(http.ListenAndServe(listenPort, nil))
+	go http.ListenAndServe(":9001", nil)
 
+	scanner := bufio.NewScanner(os.Stdin)
 
+	var addresses []string
+out:
+	for true {
+		scanner.Scan()
+		switch scanner.Text() {
+		case "connect":
+			fmt.Println("Enter an address to connect")
+			scanner.Scan()
+			addresses = append(addresses, scanner.Text())
 
+		case "attack":
+			fmt.Println("Choose a player to attack ;")
+			for i := 1; i <= len(addresses); i++ {
+				fmt.Println(i, "=>", addresses[i-1])
+			}
+			scanner.Scan()
+			num, _ := strconv.Atoi(scanner.Text())
+			apiUrl := "http://" + addresses[num-1]
 
-	//boucle commandes : connect, attack
+			response, _ := http.Get(apiUrl + "/board")
+			board, _ := ioutil.ReadAll(response.Body)
+			sb := string(board)
+			fmt.Println(sb)
+
+			resource := "/hit"
+			data := url.Values{}
+			fmt.Print("X : ")
+			scanner.Scan()
+			x := scanner.Text()
+			fmt.Print("Y : ")
+			y := scanner.Text()
+			scanner.Scan()
+			data.Set("x", x)
+			data.Set("y", y)
+			u, _ := url.ParseRequestURI(apiUrl)
+			u.Path = resource
+			urlStr := u.String() // "https://api.com/user/"
+			client := &http.Client{}
+			r, _ := http.NewRequest(http.MethodPost, urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
+			r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+			response2, _ := client.Do(r)
+			resp, _ := ioutil.ReadAll(response2.Body)
+			sb2 := string(resp)
+			fmt.Println(sb2)
+
+		case "test":
+			response, _ := http.Get("http://localhost:9001/board")
+			data, _ := ioutil.ReadAll(response.Body)
+			sb := string(data)
+			fmt.Println(sb)
+
+		case "exit":
+			break out
+		}
+	}
 
 }
 
@@ -125,4 +189,3 @@ func canPutShip(direction int, x int, y int, size int, takenSquares [10][10]bool
 
 	return true
 }
-
