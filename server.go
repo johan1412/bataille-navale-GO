@@ -40,20 +40,10 @@ func BoatsHandler(w http.ResponseWriter, req *http.Request) {
 			fmt.Fprintln(w, "Something went bad")
 			return
 		}
-		remainingShips := 0
-		message := ""
 
-		for i := 0; i < len(ships); i++ {
-			if !ships[i].isSunk() {
-				remainingShips++
-			}
-		}
+		remainingShips := getRemainingShips(ships)
 
-		if remainingShips == 0 {
-			message = "\nPlayer lost"
-		}
-
-		fmt.Fprintf(w, "Remaining ships : "+strconv.Itoa(remainingShips)+message)
+		fmt.Fprintf(w, strconv.Itoa(remainingShips))
 	}
 }
 
@@ -70,9 +60,15 @@ func HitHandler(w http.ResponseWriter, req *http.Request) {
 
 		x, _ := strconv.Atoi(req.PostForm["x"][0])
 		y, _ := strconv.Atoi(req.PostForm["y"][0])
+
 		x--
 		y--
 		message := ""
+
+		fmt.Println("You have been attacked in square : [ ", x+1, ",", y+1, " ]")
+		if getRemainingShips(ships) == 0 {
+			fmt.Println("You lost")
+		}
 
 		if !takenSquares[x][y] {
 			board[x][y] = 1

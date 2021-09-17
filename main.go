@@ -23,6 +23,11 @@ type ship struct {
 	squares []square
 }
 
+type player struct {
+	address string
+	isAlive bool
+}
+
 func (ship *ship) isSunk() bool {
 	i := 0
 	for i < len(ship.squares) {
@@ -107,58 +112,92 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	var addresses []string
+	var players []player
 out:
 	for true {
+		fmt.Print("\nAvailable commands:\n\n- connect : Connect to a player\n- attack : Attack one of the players you're connected to\n- exit : Exit the game\n\n")
 		scanner.Scan()
 		switch scanner.Text() {
 		case "connect":
-			fmt.Println("Enter an address to connect")
+			fmt.Print("\nEnter an address to connect\n\n")
 			scanner.Scan()
-			addresses = append(addresses, scanner.Text())
+			var newPlayer player
+			newPlayer.address = scanner.Text()
+			newPlayer.isAlive = true
+			players = append(players, newPlayer)
 
 		case "attack":
-			fmt.Println("Choose a player to attack ;")
-			for i := 1; i <= len(addresses); i++ {
-				fmt.Println(i, "=>", addresses[i-1])
+			if getRemainingShips(ships) == 0 {
+				fmt.Print("\nYou cannot attack, you have 0 remaining ships\n\n")
+			} else {
+				if len(players) == 0 {
+					fmt.Print("\nYou are not connected to any player\n\n")
+				} else {
+					fmt.Print("\nChoose a player to attack ;\n\n")
+					for i := 1; i <= len(players); i++ {
+						if players[i-1].isAlive {
+							fmt.Println(i, "=>", players[i-1].address)
+						}
+					}
+					scanner.Scan()
+					num, _ := strconv.Atoi(scanner.Text())
+					apiUrl := players[num-1].address
+
+					response, _ := http.Get(apiUrl + "/board")
+					board, _ := ioutil.ReadAll(response.Body)
+					sb := string(board)
+					fmt.Println(sb)
+
+					resource := "/hit"
+					data := url.Values{}
+					fmt.Print("X : ")
+					scanner.Scan()
+					x := scanner.Text()
+					fmt.Print("Y : ")
+					y := scanner.Text()
+					scanner.Scan()
+					data.Set("x", x)
+					data.Set("y", y)
+					u, _ := url.ParseRequestURI(apiUrl)
+					u.Path = resource
+					urlStr := u.String()
+					client := &http.Client{}
+					r, _ := http.NewRequest(http.MethodPost, urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
+					r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+					r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+					r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+					response2, _ := client.Do(r)
+					resp, _ := ioutil.ReadAll(response2.Body)
+					sb2 := string(resp)
+					fmt.Print("\n", sb2, "\n\n")
+					response3, _ := http.Get(players[num-1].address + "/boats")
+					data3, _ := ioutil.ReadAll(response3.Body)
+					sb3 := string(data3)
+					fmt.Println("Remaining ships :", sb3)
+
+					hasWon := true
+
+					for i := 0; i < len(players); i++ {
+
+						response, _ := http.Get(players[i].address + "/boats")
+						data, _ := ioutil.ReadAll(response.Body)
+						sb := string(data)
+						nb := 0
+						nb, _ = strconv.Atoi(sb)
+						if nb == 0 {
+							players[i].isAlive = false
+						}
+						if players[i].isAlive {
+							hasWon = false
+						}
+					}
+					if hasWon {
+						fmt.Print("\nYou won !\n")
+						break out
+					}
+
+				}
 			}
-			scanner.Scan()
-			num, _ := strconv.Atoi(scanner.Text())
-			apiUrl := "http://" + addresses[num-1]
-
-			response, _ := http.Get(apiUrl + "/board")
-			board, _ := ioutil.ReadAll(response.Body)
-			sb := string(board)
-			fmt.Println(sb)
-
-			resource := "/hit"
-			data := url.Values{}
-			fmt.Print("X : ")
-			scanner.Scan()
-			x := scanner.Text()
-			fmt.Print("Y : ")
-			y := scanner.Text()
-			scanner.Scan()
-			data.Set("x", x)
-			data.Set("y", y)
-			u, _ := url.ParseRequestURI(apiUrl)
-			u.Path = resource
-			urlStr := u.String() // "https://api.com/user/"
-			client := &http.Client{}
-			r, _ := http.NewRequest(http.MethodPost, urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
-			r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
-			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-			r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-			response2, _ := client.Do(r)
-			resp, _ := ioutil.ReadAll(response2.Body)
-			sb2 := string(resp)
-			fmt.Println(sb2)
-
-		case "test":
-			response, _ := http.Get("http://localhost:9001/board")
-			data, _ := ioutil.ReadAll(response.Body)
-			sb := string(data)
-			fmt.Println(sb)
 
 		case "exit":
 			break out
@@ -188,4 +227,14 @@ func canPutShip(direction int, x int, y int, size int, takenSquares [10][10]bool
 	}
 
 	return true
+}
+
+func getRemainingShips(ships [3]ship) int {
+	remainingShips := 0
+	for i := 0; i < len(ships); i++ {
+		if !ships[i].isSunk() {
+			remainingShips++
+		}
+	}
+	return remainingShips
 }
