@@ -129,7 +129,7 @@ out:
 			tsunami()
 		}
 
-		fmt.Print("\nAvailable commands:\n\n- connect : Connect to a player\n- attack : Attack one of the players you're connected ton\n- attack-special : Attack special one of the players you're connected to\n- message : Message one of the players you're connected to\n- exit : Exit the game\n\n")
+		fmt.Print("\nAvailable commands:\n\n- connect : Connect to a player\n- board : View enemy board\n- attack : Attack one of the players you're connected ton\n- attack-spe : Attack special one of the players you're connected to\n- message : Message one of the players you're connected to\n- exit : Exit the game\n\n")
 		scanner.Scan()
 		switch scanner.Text() {
 		case "message":
@@ -242,7 +242,7 @@ out:
 				}
 			}
 
-		case "attack-special":
+		case "attack-spe":
 			if getRemainingShips(ships) == 0 {
 				fmt.Print("\nYou cannot attack, you have 0 remaining ships\n\n")
 			} else {
@@ -323,7 +323,7 @@ out:
 					// attack up
 					if x3 > 0 && x3 < 10 {
 						data2 := url.Values{}
-						data2.Set("x", strconv.Itoa(x2))
+						data2.Set("x", strconv.Itoa(x3))
 						data2.Set("y", strconv.Itoa(y_int))
 
 						u1, _ := url.ParseRequestURI(apiUrl)
@@ -414,9 +414,35 @@ out:
 				}
 			}
 
+		case "board":
+			if getRemainingShips(ships) == 0 {
+				fmt.Print("\nYou cannot attack, you have 0 remaining ships\n\n")
+			} else {
+				if len(players) == 0 {
+					fmt.Print("\nYou are not connected to any player\n\n")
+				} else {
+					fmt.Print("\nChoose a player to attack :\n\n")
+					for i := 1; i <= len(players); i++ {
+						if players[i-1].isAlive {
+							fmt.Println(i, "=>", players[i-1].address)
+						}
+					}
+
+					scanner.Scan()
+					num, _ := strconv.Atoi(scanner.Text())
+					apiUrl := players[num-1].address
+
+					response, _ := http.Get(apiUrl + "/board")
+					board, _ := ioutil.ReadAll(response.Body)
+					sb := string(board)
+					fmt.Println(sb)
+				}
+			}
+
 		case "exit":
 			break out
 		}
+
 	}
 
 }
