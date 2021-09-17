@@ -17,9 +17,14 @@ func BoardHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		stringBoard := ""
+		stringBoard := "    | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 \n --------------------------------------------\n"
 
 		for i := 0; i < 10; i++ {
+			if i < 9 {
+				stringBoard += " "
+			}
+			stringBoard += strconv.Itoa(i+1) + " || "
+
 			for j := 0; j < 10; j++ {
 				stringBoard += strconv.Itoa(board[i][j]) + " | "
 			}
@@ -44,6 +49,23 @@ func BoatsHandler(w http.ResponseWriter, req *http.Request) {
 		remainingShips := getRemainingShips(ships)
 
 		fmt.Fprintf(w, strconv.Itoa(remainingShips))
+	}
+}
+
+func MessageHandler(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+
+	case http.MethodPost:
+
+		if err := req.ParseForm(); err != nil {
+			fmt.Println("Something went bad")
+			fmt.Fprintln(w, "Something went bad")
+			return
+		}
+
+		fmt.Println(req.PostForm["username"][0] + " : " + req.PostForm["message"][0])
+		fmt.Fprintf(w, "200")
+
 	}
 }
 

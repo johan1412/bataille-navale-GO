@@ -106,20 +106,63 @@ func main() {
 	http.HandleFunc("/board", BoardHandler)
 	http.HandleFunc("/boats", BoatsHandler)
 	http.HandleFunc("/hit", HitHandler)
+	http.HandleFunc("/message", MessageHandler)
 
+	port := os.Args[1]
 	//WrappedMux := RunSomeCode(mux)
-	go http.ListenAndServe(":9001", nil)
+	go http.ListenAndServe(":"+port, nil)
 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	var players []player
+
+	fmt.Print("Username : ")
+	scanner.Scan()
+	username := scanner.Text()
+
 out:
 	for true {
-		fmt.Print("\nAvailable commands:\n\n- connect : Connect to a player\n- attack : Attack one of the players you're connected to\n- exit : Exit the game\n\n")
+
+		rand.Seed(time.Now().UnixNano())
+		random := rand.Intn(5)
+		if random == 2 {
+			tsunami()
+		}
+
+		fmt.Print("\nAvailable commands:\n\n- connect : Connect to a player\n- attack : Attack one of the players you're connected to\n- message : Message one of the players you're connected to\n- exit : Exit the game\n\n")
 		scanner.Scan()
 		switch scanner.Text() {
+		case "message":
+			if len(players) == 0 {
+				fmt.Print("\nYou are not connected to any player\n\n")
+			} else {
+				fmt.Print("\nChoose a player to message :\n\n")
+				for i := 1; i <= len(players); i++ {
+					fmt.Println(i, "=>", players[i-1].address)
+				}
+				scanner.Scan()
+				num, _ := strconv.Atoi(scanner.Text())
+				fmt.Print("\nEnter message :\n\n")
+				scanner.Scan()
+				message := scanner.Text()
+				resource := "/message"
+				data := url.Values{}
+				data.Set("username", username)
+				data.Set("message", message)
+				u, _ := url.ParseRequestURI(players[num-1].address)
+				u.Path = resource
+				urlStr := u.String()
+				client := &http.Client{}
+				r, _ := http.NewRequest(http.MethodPost, urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
+				r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+				r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+				r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+				client.Do(r)
+
+			}
+
 		case "connect":
-			fmt.Print("\nEnter an address to connect\n\n")
+			fmt.Print("\nEnter an address to connect ( example : http://127.0.0.1:8000 ) \n\n")
 			scanner.Scan()
 			var newPlayer player
 			newPlayer.address = scanner.Text()
@@ -133,7 +176,7 @@ out:
 				if len(players) == 0 {
 					fmt.Print("\nYou are not connected to any player\n\n")
 				} else {
-					fmt.Print("\nChoose a player to attack ;\n\n")
+					fmt.Print("\nChoose a player to attack :\n\n")
 					for i := 1; i <= len(players); i++ {
 						if players[i-1].isAlive {
 							fmt.Println(i, "=>", players[i-1].address)
@@ -237,4 +280,18 @@ func getRemainingShips(ships [3]ship) int {
 		}
 	}
 	return remainingShips
+}
+
+func tsunami() {
+	fmt.Println("You have been struck by a tsunami !!! You lost.")
+	for i := 0; i < len(ships); i++ {
+		for j := 0; j < len(ships[i].squares); j++ {
+			ships[i].squares[j].hit = true
+		}
+	}
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 10; j++ {
+			board[i][j] = 3
+		}
+	}
 }
