@@ -124,8 +124,8 @@ out:
 	for true {
 
 		rand.Seed(time.Now().UnixNano())
-		random := rand.Intn(5)
-		if random == 2 {
+		random := rand.Intn(100)
+		if random == 42 {
 			tsunami()
 		}
 
