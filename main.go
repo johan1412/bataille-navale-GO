@@ -129,7 +129,7 @@ out:
 			tsunami()
 		}
 
-		fmt.Print("\nAvailable commands:\n\n- connect : Connect to a player\n- attack : Attack one of the players you're connected to\n- message : Message one of the players you're connected to\n- exit : Exit the game\n\n")
+		fmt.Print("\nAvailable commands:\n\n- connect : Connect to a player\n- attack : Attack one of the players you're connected ton\n- attack-special : Attack special one of the players you're connected to\n- message : Message one of the players you're connected to\n- exit : Exit the game\n\n")
 		scanner.Scan()
 		switch scanner.Text() {
 		case "message":
@@ -162,7 +162,7 @@ out:
 			}
 
 		case "connect":
-			fmt.Print("\nEnter an address to connect ( example : http://127.0.0.1:8000 ) \n\n")
+			fmt.Print("\nEnter an address to connect ( example : http://127.0.0.1:2000 ) \n\n")
 			scanner.Scan()
 			var newPlayer player
 			newPlayer.address = scanner.Text()
@@ -213,6 +213,178 @@ out:
 					resp, _ := ioutil.ReadAll(response2.Body)
 					sb2 := string(resp)
 					fmt.Print("\n", sb2, "\n\n")
+					response3, _ := http.Get(players[num-1].address + "/boats")
+					data3, _ := ioutil.ReadAll(response3.Body)
+					sb3 := string(data3)
+					fmt.Println("Remaining ships :", sb3)
+
+					hasWon := true
+
+					for i := 0; i < len(players); i++ {
+
+						response, _ := http.Get(players[i].address + "/boats")
+						data, _ := ioutil.ReadAll(response.Body)
+						sb := string(data)
+						nb := 0
+						nb, _ = strconv.Atoi(sb)
+						if nb == 0 {
+							players[i].isAlive = false
+						}
+						if players[i].isAlive {
+							hasWon = false
+						}
+					}
+					if hasWon {
+						fmt.Print("\nYou won !\n")
+						break out
+					}
+
+				}
+			}
+
+		case "attack-special":
+			if getRemainingShips(ships) == 0 {
+				fmt.Print("\nYou cannot attack, you have 0 remaining ships\n\n")
+			} else {
+				if len(players) == 0 {
+					fmt.Print("\nYou are not connected to any player\n\n")
+				} else {
+					fmt.Print("\nChoose a player to attack :\n\n")
+					for i := 1; i <= len(players); i++ {
+						if players[i-1].isAlive {
+							fmt.Println(i, "=>", players[i-1].address)
+						}
+					}
+					scanner.Scan()
+					num, _ := strconv.Atoi(scanner.Text())
+					apiUrl := players[num-1].address
+
+					response, _ := http.Get(apiUrl + "/board")
+					board, _ := ioutil.ReadAll(response.Body)
+					sb := string(board)
+					fmt.Println(sb)
+
+					resource := "/hit"
+					data := url.Values{}
+					fmt.Print("X : ")
+					scanner.Scan()
+					x := scanner.Text()
+					fmt.Print("Y : ")
+					scanner.Scan()
+					y := scanner.Text()
+					data.Set("x", x)
+					data.Set("y", y)
+
+					u, _ := url.ParseRequestURI(apiUrl)
+					u.Path = resource
+					urlStr := u.String()
+					client := &http.Client{}
+					r, _ := http.NewRequest(http.MethodPost, urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
+					r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+					r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+					r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+					response2, _ := client.Do(r)
+
+					resp, _ := ioutil.ReadAll(response2.Body)
+					sb2 := string(resp)
+					fmt.Print("\n", sb2, "\n\n")
+
+					x_int, _ := strconv.Atoi(x)
+					y_int, _ := strconv.Atoi(y)
+
+					x2 := x_int + 1 // down
+					x3 := x_int - 1 // up
+
+					y2 := y_int + 1 // rigth
+					y3 := y_int - 1 // left
+
+					// attack downn
+					if x2 > 0 && x2 < 10 {
+
+						data2 := url.Values{}
+						data2.Set("x", strconv.Itoa(x2))
+						data2.Set("y", strconv.Itoa(y_int))
+
+						u1, _ := url.ParseRequestURI(apiUrl)
+						u1.Path = resource
+						urlStr1 := u.String()
+						client1 := &http.Client{}
+						r1, _ := http.NewRequest(http.MethodPost, urlStr1, strings.NewReader(data2.Encode())) // URL-encoded payload
+						r1.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+						r1.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+						r1.Header.Add("Content-Length", strconv.Itoa(len(data2.Encode())))
+						response22, _ := client1.Do(r1)
+
+						resp2, _ := ioutil.ReadAll(response22.Body)
+						sb22 := string(resp2)
+						fmt.Print("\n", sb22, "\n\n")
+					}
+
+					// attack up
+					if x3 > 0 && x3 < 10 {
+						data2 := url.Values{}
+						data2.Set("x", strconv.Itoa(x2))
+						data2.Set("y", strconv.Itoa(y_int))
+
+						u1, _ := url.ParseRequestURI(apiUrl)
+						u1.Path = resource
+						urlStr1 := u.String()
+						client1 := &http.Client{}
+						r1, _ := http.NewRequest(http.MethodPost, urlStr1, strings.NewReader(data2.Encode())) // URL-encoded payload
+						r1.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+						r1.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+						r1.Header.Add("Content-Length", strconv.Itoa(len(data2.Encode())))
+						response22, _ := client1.Do(r1)
+
+						resp2, _ := ioutil.ReadAll(response22.Body)
+						sb22 := string(resp2)
+						fmt.Print("\n", sb22, "\n\n")
+					}
+
+					// attack right
+					if y2 > 0 && y2 < 10 {
+
+						data2 := url.Values{}
+						data2.Set("x", strconv.Itoa(x_int))
+						data2.Set("y", strconv.Itoa(y2))
+
+						u1, _ := url.ParseRequestURI(apiUrl)
+						u1.Path = resource
+						urlStr1 := u.String()
+						client1 := &http.Client{}
+						r1, _ := http.NewRequest(http.MethodPost, urlStr1, strings.NewReader(data2.Encode())) // URL-encoded payload
+						r1.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+						r1.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+						r1.Header.Add("Content-Length", strconv.Itoa(len(data2.Encode())))
+						response22, _ := client1.Do(r1)
+
+						resp2, _ := ioutil.ReadAll(response22.Body)
+						sb22 := string(resp2)
+						fmt.Print("\n", sb22, "\n\n")
+					}
+
+					// attack left
+					if y3 > 0 && y3 < 10 {
+
+						data2 := url.Values{}
+						data2.Set("x", strconv.Itoa(x_int))
+						data2.Set("y", strconv.Itoa(y3))
+
+						u1, _ := url.ParseRequestURI(apiUrl)
+						u1.Path = resource
+						urlStr1 := u.String()
+						client1 := &http.Client{}
+						r1, _ := http.NewRequest(http.MethodPost, urlStr1, strings.NewReader(data2.Encode())) // URL-encoded payload
+						r1.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+						r1.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+						r1.Header.Add("Content-Length", strconv.Itoa(len(data2.Encode())))
+						response22, _ := client1.Do(r1)
+
+						resp2, _ := ioutil.ReadAll(response22.Body)
+						sb22 := string(resp2)
+						fmt.Print("\n", sb22, "\n\n")
+					}
+
 					response3, _ := http.Get(players[num-1].address + "/boats")
 					data3, _ := ioutil.ReadAll(response3.Body)
 					sb3 := string(data3)
