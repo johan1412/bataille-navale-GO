@@ -94,8 +94,6 @@ func main() {
 
 	}
 
-	//fmt.Print(ships)
-
 	/* port := os.Args[1]
 	=	fmt.Println("Port = ", port)
 
@@ -129,9 +127,12 @@ out:
 			tsunami()
 		}
 
-		fmt.Print("\nAvailable commands:\n\n- connect : Connect to a player\n- board : View enemy board\n- attack : Attack one of the players you're connected ton\n- attack-spe : Attack special one of the players you're connected to\n- message : Message one of the players you're connected to\n- exit : Exit the game\n\n")
+		fmt.Print("\nAvailable commands:\n\n- ships : View coordinates of your own ships\n- connect : Connect to a player\n- board : View enemy board\n- attack : Attack one of the players you're connected ton\n- attack-spe : Attack special one of the players you're connected to\n- message : Message one of the players you're connected to\n- exit : Exit the game\n\n")
 		scanner.Scan()
 		switch scanner.Text() {
+		case "ships":
+			fmt.Print(ships, "\n")
+
 		case "message":
 			if len(players) == 0 {
 				fmt.Print("\nYou are not connected to any player\n\n")
